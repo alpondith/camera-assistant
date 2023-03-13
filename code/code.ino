@@ -1,5 +1,16 @@
 #include <WiFi.h>
+
+#include <HTTPClient.h>
+
 #include "esp_camera.h"
+#include <FS.h> //this needs to be first, or it all crashes and burns...
+#include "SPIFFS.h"
+#include "esp_timer.h"
+#include "img_converters.h"
+#include "Arduino.h"
+#include "SD_MMC.h"
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 
 //*********************************************//
@@ -19,6 +30,8 @@ void setup() {
   setupWifi();
   
   setupCamera();
+
+  setupFileSystem();
   
   
 }
@@ -29,7 +42,9 @@ void setup() {
 //*********************************************//
 void loop() {
   Serial.println("Loop running");
-  delay(3000);
+  takePicture();
+  uploadPicture();
+  delay(10000);
 }
 
 
@@ -95,4 +110,94 @@ void setupCamera(){
   Serial.println("Camera Setup Complete");
   Serial.println("*********************************************");
   
+}
+
+void setupFileSystem(){
+  
+  // Initialize the SPIFFS file system
+  if (!SPIFFS.begin(true)) {
+    Serial.println("*********************************************");
+    Serial.println("An error occurred while mounting SPIFFS");
+    Serial.println("*********************************************");
+    return;
+  }  
+
+  Serial.println("*********************************************");
+  Serial.println("SPIFFS Filesystem setup complete.");
+  Serial.println("*********************************************");
+  
+}
+
+void takePicture(){
+  // Take a photo
+  camera_fb_t* fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Camera capture failed");
+    return;
+  }
+
+  // Save the photo to the SPIFFS file system with a fixed filename
+  char* filename = "/image.jpg";
+  File file = SPIFFS.open(filename, FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+  
+  file.write(fb->buf, fb->len);
+  file.close();
+  esp_camera_fb_return(fb);
+
+
+
+  // Check if the file exists
+  if (SPIFFS.exists(filename)) {
+    Serial.println("Image saved to /image.jpg");
+  } else {
+    Serial.println("Failed to save image");
+  }
+    
+}
+
+
+void uploadPicture() {
+  // Open the image file
+  char* filename = "/image.jpg";
+  File file = SPIFFS.open(filename, FILE_READ);
+  if (!file) {
+    Serial.println("Failed to open file for reading");
+    return;
+  }
+
+  // Create an HTTPClient object
+  HTTPClient http;
+
+  // Set the API endpoint URL
+  http.begin("http://gassistant.insoulit.com/api/image");
+
+  // Set the HTTP request method
+  http.addHeader("Content-Type", "multipart/form-data");
+  http.addHeader("Content-Disposition", "form-data; name=\"img\"; filename=\"image.jpg\"");
+  
+//  http.addParameter("camera_key", "aCPeaY8K4p1EYMzqyTRoEX2gNktOyOoXg3c08Gxi");
+//  http.addParameter("count", "0");
+//  
+//  // Send the file as the request body
+//  
+//  const char* formFieldName = "img";
+//  int httpCode = http.POST(file, formFieldName);
+
+  // Check the HTTP response code
+  if (httpCode == HTTP_CODE_OK) {
+    Serial.println("Image sent successfully");
+  } else {
+    Serial.print("HTTP error: ");
+    Serial.println(httpCode);
+    String response = http.getString();
+    Serial.println(response);
+  }
+
+  // Close the file and the HTTP connection
+  file.close();
+  http.end();
 }
