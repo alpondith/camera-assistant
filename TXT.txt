@@ -1,0 +1,4 @@
+Youtube : https://www.youtube.com/watch?v=RCtVxZnjPmY&ab_channel=Robojax
+Doc : https://docs.espressif.com/projects/arduino-esp32/en/latest/installing.html
+
+Board Manager link : https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
