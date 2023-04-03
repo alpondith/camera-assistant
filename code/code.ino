@@ -1,6 +1,7 @@
 #include <WiFi.h>
-
+#include <ArduinoJson.h>
 #include <HTTPClient.h>
+#include <base64.h>
 
 #include "esp_camera.h"
 #include <FS.h> //this needs to be first, or it all crashes and burns...
@@ -18,6 +19,12 @@
 //*********************************************//
 const char* ssid = "black_sky";
 const char* password = "blackmirror";
+
+
+//*********************************************//
+//********* IMAGE UPLOAD API ENDPOINT *********//
+//*********************************************//
+const char* endpoint = "http://gassistant.insoulit.com/api/image";
 
 
 //*********************************************//
@@ -112,6 +119,10 @@ void setupCamera(){
   
 }
 
+
+//*********************************************//
+//*********   FILE SYSTEM SETUP ***************//
+//*********************************************//
 void setupFileSystem(){
   
   // Initialize the SPIFFS file system
@@ -128,6 +139,10 @@ void setupFileSystem(){
   
 }
 
+
+//*********************************************//
+//************   TAKE PHOTO   *****************//
+//*********************************************//
 void takePicture(){
   // Take a photo
   camera_fb_t* fb = esp_camera_fb_get();
@@ -159,45 +174,49 @@ void takePicture(){
     
 }
 
+//*********************************************//
+//************   UPLOAD IMAGE *****************//
+//*********************************************//
 
 void uploadPicture() {
-  // Open the image file
-  char* filename = "/image.jpg";
-  File file = SPIFFS.open(filename, FILE_READ);
-  if (!file) {
-    Serial.println("Failed to open file for reading");
-    return;
-  }
+// Open the image file
+char* filename = "/image.jpg";
+File file = SPIFFS.open(filename, FILE_READ);
+if (!file) {
+  Serial.println("Failed to open file for reading");
+  return;
+}
 
-  // Create an HTTPClient object
-  HTTPClient http;
+// Create an HTTPClient object
+HTTPClient http;
 
-  // Set the API endpoint URL
-  http.begin("http://gassistant.insoulit.com/api/image");
+// Set the API endpoint URL
+http.begin(endpoint);
 
-  // Set the HTTP request method
-  http.addHeader("Content-Type", "multipart/form-data");
-  http.addHeader("Content-Disposition", "form-data; name=\"img\"; filename=\"image.jpg\"");
-  
-//  http.addParameter("camera_key", "aCPeaY8K4p1EYMzqyTRoEX2gNktOyOoXg3c08Gxi");
-//  http.addParameter("count", "0");
-//  
-//  // Send the file as the request body
-//  
-//  const char* formFieldName = "img";
-//  int httpCode = http.POST(file, formFieldName);
 
-  // Check the HTTP response code
-  if (httpCode == HTTP_CODE_OK) {
-    Serial.println("Image sent successfully");
-  } else {
-    Serial.print("HTTP error: ");
-    Serial.println(httpCode);
-    String response = http.getString();
-    Serial.println(response);
-  }
+  http.addHeader("Accept", "application/json");
+//  http.addHeader("Content-Type", "application/json");
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-  // Close the file and the HTTP connection
-  file.close();
-  http.end();
+ //  http.addHeader("Content-Type", "multipart/form-data");
+ //  http.addHeader("camera_key", "aCPeaY8K4p1EYMzqyTRoEX2gNktOyOoXg3c08Gxi");
+ String httpRequestData = "camera_key=aCPeaY8K4p1EYMzqyTRoEX2gNktOyOoXg3c08Gxi";
+
+ // Send the file as the request body
+ int httpCode = http.POST(httpRequestData);
+
+
+// Check the HTTP response code
+if (httpCode == HTTP_CODE_OK) {
+  Serial.println("Image sent successfully");
+} else {
+  Serial.print("HTTP error: ");
+  Serial.println(httpCode);
+  String response = http.getString();
+  Serial.println(response);
+}
+
+// Close the file and the HTTP connection
+file.close();
+http.end();
 }
