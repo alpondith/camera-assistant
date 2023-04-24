@@ -39,9 +39,6 @@ void setup() {
   
   setupCamera();
 
-  setupFileSystem();
-  
-  
 }
 
 
@@ -50,8 +47,11 @@ void setup() {
 //*********************************************//
 void loop() {
   Serial.println("Loop running");
+  
   takePicture();
+  
   uploadPicture();
+  
   delay(10000);
 }
 
@@ -125,57 +125,29 @@ void setupCamera(){
 //*********************************************//
 //*********   FILE SYSTEM SETUP ***************//
 //*********************************************//
-void setupFileSystem(){
-  
-  // Initialize the SPIFFS file system
-  if (!SPIFFS.begin(true)) {
-    Serial.println("*********************************************");
-    Serial.println("An error occurred while mounting SPIFFS");
-    Serial.println("*********************************************");
-    return;
-  }  
 
-  Serial.println("*********************************************");
-  Serial.println("SPIFFS Filesystem setup complete.");
-  Serial.println("*********************************************");
-  
-}
 
 
 //*********************************************//
 //************   TAKE PHOTO   *****************//
 //*********************************************//
 void takePicture(){
-  // Take a photo
+    // Capture image
   camera_fb_t* fb = esp_camera_fb_get();
   if (!fb) {
-    Serial.println("Camera capture failed");
+    ESP_LOGE(TAG, "Failed to capture image");
     return;
   }
 
-  // Save the photo to the SPIFFS file system with a fixed filename
-  char* filename = "/image.jpg";
-  File file = SPIFFS.open(filename, FILE_WRITE);
-  if (!file) {
-    Serial.println("Failed to open file for writing");
-    return;
-  }
-  
-  Serial.print("Image size : ");
-  Serial.print( fb->len/1000);
-  Serial.println("KB" );
-  
-  file.write(fb->buf, fb->len);
-  file.close();
+  // Encode to base64
+  String encoded = base64::encode(fb->buf, fb->len);
+
+  // Print to serial console
+  Serial.println(encoded);
+  Serial.println("=================================================");
+
+  // Free memory
   esp_camera_fb_return(fb);
-
-  
-  // Check if the file exists
-  if (SPIFFS.exists(filename)) {
-    Serial.println("Image saved to /image.jpg");
-  } else {
-    Serial.println("Failed to save image");
-  }
     
 }
 
@@ -231,51 +203,51 @@ void takePicture(){
 
 void uploadPicture() {
   
-  // Open the image file
-  char* filename = "/image.jpg";
-  File file = SPIFFS.open(filename, FILE_READ);
-  if (!file) {
-    Serial.println("Failed to open file for reading");
-    return;
-  }
-
-  // Create an HTTPClient object
-  HTTPClient http;
-  
-  // Set the API endpoint URL
-  http.begin(endpoint);
-
-  http.setTimeout(8000); // Set a timeout of 5 seconds
-
-
-  http.addHeader("Accept", "application/json");
-  http.addHeader("Content-Type", "multipart/form-data;boundary=---MyBoundary");
-
-  // Create the request body with the camera key and image file
-  String body = "";
-  body += "---MyBoundary\r\n";
-  body += "Content-Disposition: form-data; name=\"camera_key\"\r\n\r\n";
-  body += "aCPeaY8K4p1EYMzqyTRoEX2gNktOyOoXg3c08Gxi\r\n";
-  body += "---MyBoundary\r\n";
-  body += "Content-Disposition: form-data; name=\"img\"; filename=\"image.jpg\"\r\n";
-  body += "Content-Type: image/jpeg\r\n\r\n";
-  http.addHeader("Content-Length", String(file.size() + body.length()));
-  
-  // Send the request body and the file data as the request body
-  int httpCode = http.POST(body);
-//  http.write((uint8_t*)file.read(), file.size());
-
-  // Check the HTTP response code
-  if (httpCode == HTTP_CODE_OK) {
-    Serial.println("Image sent successfully");
-  } else {
-    Serial.print("HTTP error: ");
-    Serial.println(httpCode);
-    String response = http.getString();
-    Serial.println(response);
-  }
-
-  // Close the file and the HTTP connection
-  file.close();
-  http.end();
+//  // Open the image file
+//  char* filename = "/image.jpg";
+//  File file = SPIFFS.open(filename, FILE_READ);
+//  if (!file) {
+//    Serial.println("Failed to open file for reading");
+//    return;
+//  }
+//
+//  // Create an HTTPClient object
+//  HTTPClient http;
+//  
+//  // Set the API endpoint URL
+//  http.begin(endpoint);
+//
+//  http.setTimeout(8000); // Set a timeout of 5 seconds
+//
+//
+//  http.addHeader("Accept", "application/json");
+//  http.addHeader("Content-Type", "multipart/form-data;boundary=---MyBoundary");
+//
+//  // Create the request body with the camera key and image file
+//  String body = "";
+//  body += "---MyBoundary\r\n";
+//  body += "Content-Disposition: form-data; name=\"camera_key\"\r\n\r\n";
+//  body += "aCPeaY8K4p1EYMzqyTRoEX2gNktOyOoXg3c08Gxi\r\n";
+//  body += "---MyBoundary\r\n";
+//  body += "Content-Disposition: form-data; name=\"img\"; filename=\"image.jpg\"\r\n";
+//  body += "Content-Type: image/jpeg\r\n\r\n";
+//  http.addHeader("Content-Length", String(file.size() + body.length()));
+//  
+//  // Send the request body and the file data as the request body
+//  int httpCode = http.POST(body);
+////  http.write((uint8_t*)file.read(), file.size());
+//
+//  // Check the HTTP response code
+//  if (httpCode == HTTP_CODE_OK) {
+//    Serial.println("Image sent successfully");
+//  } else {
+//    Serial.print("HTTP error: ");
+//    Serial.println(httpCode);
+//    String response = http.getString();
+//    Serial.println(response);
+//  }
+//
+//  // Close the file and the HTTP connection
+//  file.close();
+//  http.end();
 }
