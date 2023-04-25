@@ -17,6 +17,8 @@ static const char* TAG = "ESP32-CAM";
 camera_config_t config;
 
 #include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 //*********************************************//
 //************WIFI CREDENTIALS*****************//
@@ -28,7 +30,7 @@ const char* password = "blackmirror";
 //*********************************************//
 //********* IMAGE UPLOAD API ENDPOINT *********//
 //*********************************************//
-const char* endpoint = "http://gassistant.insoulit.com/api/image";
+const char* url = "http://gassistant.insoulit.com/api/image";
 
 
 //*********************************************//
@@ -53,8 +55,9 @@ void setup()
 void loop()
 {
   // Capture and encode image every 5 seconds
-  delay(10000);
-  captureAndEncode();
+  delay(15000);
+  captureAndSend();
+
 }
 
 //*********************************************//
@@ -116,7 +119,7 @@ void setupCamera()
   }
 }
 
-String captureAndEncode()
+String captureAndSend()
 {
   // Capture image
   camera_fb_t* fb = esp_camera_fb_get();
@@ -131,8 +134,36 @@ String captureAndEncode()
   // Print to serial console
   Serial.println(encoded);
 
+//  sendDataToServer(encoded);
+
   // Free memory
   esp_camera_fb_return(fb);
 
   return encoded;
+}
+
+// ***************************************************************//
+// ****************Send Data to Server****************************//
+// ***************************************************************//
+void sendDataToServer(String encoded) {
+  Serial.println("--------------------------------------------------------");
+  
+  HTTPClient http;   
+  
+  http.begin(url);
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  http.addHeader("Accept", "application/json");
+  
+  String postData = "camera_key=aCPeaY8K4p1EYMzqyTRoEX2gNktOyOoXg3c08Gxi&img=" + encoded; // create form data string
+  
+  int httpResponseCode = http.POST(postData); // send the form data
+
+  Serial.print(" HTTP Response code : ");
+  Serial.println(httpResponseCode);
+
+  Serial.println(http.getString());
+  
+  http.end();
+  
+  Serial.println("--------------------------------------------------------");
 }

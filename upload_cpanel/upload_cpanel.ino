@@ -24,9 +24,9 @@
 const char* ssid = "Alpondith";
 const char* password = "12345678";
 
-String serverName = "test.insoulit.com";   //REPLACE WITH YOUR DOMAIN NAME
+String serverName = "gassistant.insoulit.com";   //REPLACE WITH YOUR DOMAIN NAME
 
-String serverPath = "/upload.php";     // The default serverPath should be upload.php
+String serverPath = "/api/image-upload";     // The default serverPath should be upload.php
 
 const int serverPort = 443; //server port for HTTPS
 //const int serverPort = 80; //server port for HTTP
