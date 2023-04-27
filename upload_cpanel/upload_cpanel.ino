@@ -26,7 +26,9 @@ const char* password = "12345678";
 
 String serverName = "gassistant.insoulit.com";   //REPLACE WITH YOUR DOMAIN NAME
 
-String serverPath = "/api/image-upload";     // The default serverPath should be upload.php
+String serverPath = "/api/image-upload";  
+
+String camera_key = "aCPeaY8K4p1EYMzqyTRoEX2gNktOyOoXg3c08Gxi";
 
 const int serverPort = 443; //server port for HTTPS
 //const int serverPort = 80; //server port for HTTP
@@ -141,7 +143,18 @@ String sendPhoto() {
   client.setInsecure(); //skip certificate validation
   if (client.connect(serverName.c_str(), serverPort)) {
     Serial.println("Connection successful!");    
-    String head = "--RandomNerdTutorials\r\nContent-Disposition: form-data; name=\"imageFile\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
+//    String head = "--RandomNerdTutorials\r\nContent-Disposition: form-data; name=\"imageFile\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
+//    String tail = "\r\n--RandomNerdTutorials--\r\n";
+
+
+    String head = "--RandomNerdTutorials\r\n"
+                  "Content-Disposition: form-data; "
+                  "name=\"imageFile\"; "
+                  "filename=\"esp32-cam.jpg\"; "
+                  "camera_key=\"" + camera_key  + "\"; \r\n"
+                  "Content-Type: image/jpeg\r\n"
+                  "\r\n";
+
     String tail = "\r\n--RandomNerdTutorials--\r\n";
 
     uint32_t imageLen = fb->len;
