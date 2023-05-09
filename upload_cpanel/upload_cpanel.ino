@@ -24,7 +24,7 @@
 const char* ssid = "Alpondith";
 const char* password = "12345678";
 
-String serverName = "gassistant.insoulit.com";   //REPLACE WITH YOUR DOMAIN NAME
+String serverName = "gassistant.hbbma.com";   //REPLACE WITH YOUR DOMAIN NAME
 
 String serverPath = "/api/image-upload";  
 
